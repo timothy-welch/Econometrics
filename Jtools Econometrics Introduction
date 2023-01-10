@@ -1,0 +1,72 @@
+install.packages("wooldridge")
+#installing package that is great for comparing linear models visually
+install.packages("jtools")
+install.packages("broom")
+install.packages("broom.mixed")
+library(broom.mixed)
+library(broom)
+library(jtools)
+library(wooldridge)
+library(tidyverse)
+library(ggplot2)
+data("wage1")
+view(wage1)
+data("jtrain")
+
+#simple plot
+wage1%>%
+  ggplot(aes(x = educ, y = wage)) +
+  geom_point() + 
+  ggtitle("Wages vs Education, 1976" )+
+  ylab("Wage") +
+  xlab("Education Level") +
+  theme_classic()
+
+#creating linear model of log wage to education
+log_wage_model <- lm(lwage ~ educ, data = wage1)
+summary(log_wage_model)
+
+#plotting linear model using log wage
+  
+wage1%>%
+  ggplot(aes(x = educ, y = lwage)) +
+  geom_point() + 
+  ggtitle("Log Wage Equation, 1976" )+
+  ylab("Log Wage") +
+  xlab("Education Level") +
+  theme_classic() +
+  geom_smooth(method = lm)
+
+#creating new linear model with multiple variables
+hourly_wage_model <- lm(lwage ~ educ + exper + tenure, data = wage1)
+coefficients(hourly_wage_model)
+
+#using jtools package to summarize and linear models
+summ(hourly_wage_model)
+plot_summs(hourly_wage_model, log_wage_model,
+           plot.distributions = TRUE)
+
+##working with jtrain data -> effect of unions on productivity 
+#lscrap: Log(scrap rate per 100 items) -> "productivity"
+#hrsemp: (total hours training) / (total employees trained)
+#lsales: Log(annual sales, $)
+#lemploy: Log(number of employees at plant)
+
+view(jtrain)
+
+#filtering for nonunion firms in 1987
+jtrain_subset <- subset(jtrain, subset = (year == 1987 & union == 0),
+                        select = c(year, union, lscrap, hrsemp, lsales, lemploy))
+
+jtrain_subset
+#how many NA values are there?, mostly in lscrap
+sum(is.na(jtrain_subset))
+
+#cleaning up NA values for better analysis
+jtrain_clean <- na.omit(jtrain_subset)
+jtrain_clean
+
+#creating linear model of training hours, sales, and # of employees effect on scrap
+linear_model <- lm(lscrap ~ hrsemp + lsales + lemploy, data = jtrain_clean)
+summ(linear_model)
+plot_summs(linear_model, plot.distributions = TRUE)
